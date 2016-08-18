@@ -1,35 +1,41 @@
 // ./routes/layouts.js
-
 var express = require('express');
 var router = express.Router();
 var mongoose = require('mongoose');
 var Layouts = require('../models/Layouts');
+var hiddenFields = { __v: 0, is_removed: 0 };
 
 router.get('/', function(req, res, next) {
 
-	Layouts.find(function(err, layouts){
-
+	Layouts.find({}, hiddenFields, function(err, layouts) {
 		if(err) {
 			return next(err);
 		}
 
 		res.json(layouts);
-
 	});
 
 });
 
 router.post('/', function(req, res, next) {
 
+	var newId;
 	Layouts.create(req.body, function(err, layouts) {
-
 		if(err) {
 			return next(err);
 		}
 
-		res.json(layouts);
+		this.newId = layouts._id;
+		Layouts.findById(this.newId, hiddenFields, function(err, layouts) {
+			if(err) {
+				return next(err);
+			}
 
-	})
+			res.json(layouts);
+		});
+	});
+	
+	
 
 });
 

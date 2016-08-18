@@ -14,6 +14,7 @@ var LayoutsSchema = new mongoose.Schema({
 	y: { type: Number, required: true },
 	w: { type: Number, required: true },
 	h: { type: Number, required: true },
+	is_static: { type: Boolean, default: false },
 	is_removed: { type: Boolean, default: false }
 });
 
