@@ -47,7 +47,7 @@ router.put('/:id', function(req, res, next) {
 
 router.delete('/:id', function(req,res,next) {
 
-	Layouts.findByIdAndUpdate(req.params.id, { isRemoved: true }, function(err, layouts) {
+	Layouts.findByIdAndUpdate(req.params.id, { is_removed: true }, function(err, layouts) {
 		if(err) {
 			return next(err);
 		}
