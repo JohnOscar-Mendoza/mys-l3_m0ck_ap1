@@ -2,8 +2,8 @@
 var express = require('express');
 var router = express.Router();
 var mongoose = require('mongoose');
-var Grids = require('../../models/v1/grids');
-var Layouts = require('../../models/v1/layouts');
+var Grids = require('../../models/v1/Grids');
+var Layouts = require('../../models/v1/Layouts');
 var hidden_fields = { __v: 0, is_removed: 0 };
 var response = {} ;
 var new_id;
