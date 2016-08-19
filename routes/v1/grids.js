@@ -40,6 +40,7 @@ router.post('/', function(req, res, next) {
 				res.json({ message: 'Missing Required Parameter' });
 				return;
 			}
+
 			Grids.findOne(grid)
 			.populate('layout_id')
 			.exec(function (err, result) {
@@ -51,9 +52,45 @@ router.post('/', function(req, res, next) {
 
 });
 
-router.put('/:id', function (req, res, next) {
+router.post('/:grid_id/layouts/', function( req, res, next) {
 
-	Layouts.findByIdAndUpdate(req.params.id, req.body, function (err, result) {
+	Layouts.create(req.body, function(err, layouts) {
+		if(err) {
+			// I dont know what the errors specifically are I just assumed that an object key is missing
+			res.json(req.body);
+			res.json({ message: 'Missing Required Parameter' });
+			return;
+		}
+
+		Grids.findByIdAndUpdate(
+			req.params.grid_id, 
+			{ $push: { 'layout_id': layouts._id} }, 
+			{ safe: true, upsert: true },
+			function(err, grid) {
+				if(err) {
+
+					res.json(req.body);
+					res.json({ message: 'Missing Required Parameter' });
+					return;
+				}
+
+				Grids.findById(req.params.id, hidden_fields)
+				.populate('layout_id', hidden_fields)
+				.exec(function(err, result) {
+					if(err) {
+						res.json({ message: 'No record found' });
+						return;
+					}
+
+					res.json(result);
+				});
+			});
+	});
+});
+
+router.put('/:grid_id/layouts/:layout_id', function (req, res, next) {
+
+	Layouts.findByIdAndUpdate(req.params.layout_id, req.body, function (err, result) {
 		if(err) {
 			res.json(req.body);
 			res.json({ message: 'Missing Required Parameter' });
@@ -75,7 +112,6 @@ router.put('/:id', function (req, res, next) {
 	});
 
 });
-
 
 router.delete('/:id', function(req, res, next) {
 
