@@ -74,7 +74,7 @@ router.post('/:grid_id/layouts/', function( req, res, next) {
 					return;
 				}
 
-				Grids.findById(req.params.id, hidden_fields)
+				Grids.findById(req.params.grid_id, hidden_fields)
 				.populate('layout_id', hidden_fields)
 				.exec(function(err, result) {
 					if(err) {
@@ -85,6 +85,7 @@ router.post('/:grid_id/layouts/', function( req, res, next) {
 					res.json(result);
 				});
 			});
+
 	});
 });
 
