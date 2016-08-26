@@ -19,6 +19,8 @@ mongoose.connect('mongodb://localhost:27017/layouts');
 var grids = require('./routes/v1/grids');
 app.use('/v1/grids', grids);
 
+var serialized = require('./routes/v1/serialized');
+app.use('/v1/serialized', serialized)
 // Start Server
 app.listen(3000);
 console.log("Server running at port 3000");

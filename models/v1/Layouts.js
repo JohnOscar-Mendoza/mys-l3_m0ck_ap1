@@ -4,6 +4,7 @@ var Schema = mongoose.Schema;
 // Assume that the graph type is sent from the Core Api
 var LayoutsSchema = new mongoose.Schema({
 
+	grid_id: { type: Schema.Types.ObjectId },
 	x: { type: Number, required: true },
 	y: { type: Number, required: true },
 	w: { type: Number, required: true },
@@ -16,6 +17,8 @@ var LayoutsSchema = new mongoose.Schema({
 	created_at: { type: Date, default: Date.now() }
 
 });
+
+LayoutsSchema.index({ grid_id: 1, size: 1 }, { unique: true });
 
 var Layouts = mongoose.model('layouts', LayoutsSchema);
 module.exports = Layouts;

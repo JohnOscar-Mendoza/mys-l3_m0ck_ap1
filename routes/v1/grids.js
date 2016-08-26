@@ -1,5 +1,7 @@
 // ./routes/grids.js
+var async = require('async');
 var express = require('express');
+var colors = require('colors');
 var router = express.Router();
 var mongoose = require('mongoose');
 var Grids = require('../../models/v1/Grids');
@@ -10,86 +12,214 @@ var new_id;
 
 router.get('/', function(req, res, next) {
 	
+	console.log((req.method+' at /v1/grids/').green);
 	Grids.find({ is_removed: 0}, hidden_fields)
-	.populate('layout_id', hidden_fields)
+	.populate('layout_id', hidden_fields, { is_removed: false })
 	.exec(function(err, results) {
 		if(err) {
 			res.json({ message: 'No record found' });
 			return;
 		}
 
+		// var arr = [];
+		// results.forEach( function(value) {
+
+		// 	value.layout_id.forEach( function(li_value) {
+
+		// 	} )
+
+		// } );
+
 		res.json(results);
+
 	});
 
 });
 
 router.post('/', function(req, res, next) {
 
-	Layouts.create(req.body, function(err, layouts) {
-		if(err) {
-			// I dont know what the errors specifically are I just assumed that an object key is missing
-			res.json(req.body);
-			res.json({ message: 'Missing Required Parameter' });
-			return;
-		}
+	console.log(req.method+' at /v1/grids/'.red);
+	
+	/* Waterfall Process
+	1. Create Grid
+	2. Layout
+	3. Update Grid
+	4. Get Grid
+	*/
 
-		Grids.create({ layout_id: [ layouts._id ] }, function(err, grid) {
+	async.waterfall([
+		create_grid,
+		create_layout,
+		update_grid,
+		get_grid
+		], 
+		function(err, results) {
 			if(err) {
-				// I dont know what the errors specifically are I just assumed that an object key is missing
-				res.json(req.body);
-				res.json({ message: 'Missing Required Parameter' });
-				return;
+				console.log(err);
+				res.json(err);
 			}
 
-			Grids.findOne(grid)
-			.populate('layout_id')
-			.exec(function (err, result) {
-				res.json(result);
-			})
+			res.json(results);
+			next();
 		});
+
+	function create_grid(callback) {
+
+		Grids.create( { }, function(err, grid) {
+			if(err) {
+
+
+				res.json({ message: 'Missing Required Parameter' });
+
+			}
+			callback(null, grid._id, req.body);
+			return grid._id;
+		} );
+
+	}
+
+	function create_layout(gridId, requestBody ,callback) {
+
+		Layouts.create(Object.assign({grid_id: gridId}, requestBody), function(err, layouts) {
+			if(err) {
+				console.log(err);
+				res.json({ message: 'Missing Required Parameter' });
+
+			}
+
+			callback(null, gridId, layouts._id);
+		})
+
+	}
+
+	function update_grid(gridId, layoutId, callback) {
+
+		Grids.findByIdAndUpdate(gridId, { $push: { layout_id: layoutId } }, { upsert: true }, function( err, grid) {
+			if(err) {
+				console.log(err);
+				res.json({ message: 'Missing Required Parameter' });
+			}
+
+			callback(null, grid._id);
+
+		});
+	}
+
+	function get_grid(gridId, callback) {
 		
-	});
+		Grids.findById(gridId)
+		.populate('layout_id')
+		.exec( function (err, result) {
+
+			if(err)
+			{
+				console.log(err);
+				callback(null, { message: "No record found"} );
+			}
+
+			callback(null, result)
+
+		});
+
+	}
 
 });
 
 router.post('/:grid_id/layouts/', function( req, res, next) {
+	console.log(req.method+' at /'+req.params.grid_id+'/layouts'.red);
+	async.waterfall([
+		get_grid,
+		create_layout,
+		update_grid,
+		get_udpated_grid
+		],
+		function(err, results) {
 
-	Layouts.create(req.body, function(err, layouts) {
-		if(err) {
-			// I dont know what the errors specifically are I just assumed that an object key is missing
-			res.json(req.body);
-			res.json({ message: 'Missing Required Parameter' });
+			if(err) {
+				console.log(err);
+				res.json(err);
+				next();
+				return;
+			}
+
+			console.log(results);
+			res.json(results);
+			next();
 			return;
-		}
 
-		Grids.findByIdAndUpdate(
-			req.params.grid_id, 
-			{ $push: { 'layout_id': layouts._id} }, 
-			{ safe: true, upsert: true },
-			function(err, grid) {
-				if(err) {
+		});
 
-					res.json(req.body);
-					res.json({ message: 'Missing Required Parameter' });
+	function get_grid(callback) {
+
+		Grids.findById(req.params.grid_id, hidden_fields, function(err, grid) {
+			if(err || grid == null) {
+				callback({ message: 'No record found' }, null);
+				return;
+			}
+
+			callback(null, grid._id, req.body);
+			return;
+
+		});
+
+	}
+
+	function create_layout(gridId, requestBody, callback) {
+
+		Layouts.create(Object.assign({grid_id: gridId}, requestBody), function(err, layout) {
+			if(err) {
+				if(err.code == 11000) {
+					callback({ message: 'Duplicate key' }, null);
 					return;
 				}
 
-				Grids.findById(req.params.grid_id, hidden_fields)
-				.populate('layout_id', hidden_fields)
-				.exec(function(err, result) {
-					if(err) {
-						res.json({ message: 'No record found' });
-						return;
-					}
+				callback({ message: 'Missing Required Parameter' }, null);
+				return;
 
-					res.json(result);
-				});
-			});
+			}
 
-	});
+			callback(null, gridId, layout._id);
+			return;
+		});
+
+	}
+
+	function update_grid(gridId, layoutId, callback) {
+
+		Grids.findByIdAndUpdate(gridId, { $push: { layout_id: layoutId } }, { upsert: true }, function( err, grid) {
+			if(err) {
+
+				callback({ message: 'Missing Required Parameter' }, null);
+				return;
+			}
+
+			callback(null, grid._id);
+
+		});
+	}
+
+	function get_udpated_grid(gridId, callback) {
+		Grids.findById(gridId)
+		.populate('layout_id')
+		.exec( function (err, result) {
+
+			if(err || result == null)
+			{
+				callback({ message: "No record found"}, null);
+				return;
+			}
+
+			callback(null, result)
+
+		});
+
+	}
+
 });
 
 router.put('/:grid_id/layouts/:layout_id', function (req, res, next) {
+
+	console.log((req.method+' at /v1/grids/'+req.params.grid_id+'/layouts/'+req.params.layout_id+'/').blue);
 
 	Layouts.findByIdAndUpdate(req.params.layout_id, req.body, function (err, result) {
 		if(err) {
@@ -114,7 +244,7 @@ router.put('/:grid_id/layouts/:layout_id', function (req, res, next) {
 
 });
 
-router.delete('/:id', function(req, res, next) {
+router.delete('/:grid_id', function(req, res, next) {
 
 	Grids.findByIdAndUpdate(req.params.id, {is_removed: 1}, function (err, result) {
 		if(err) {
@@ -123,16 +253,16 @@ router.delete('/:id', function(req, res, next) {
 			return;
 		}
 
-		res.json({ _id: req.params.id, removed: true});
+		res.json({ _id: req.params.grid_id, removed: true});
 
 	});
 
 
 });
 
-router.get('/:id', function(req, res, next) {
+router.get('/:grid_id', function(req, res, next) {
 
-	Grids.findById(req.params.id, hidden_fields)
+	Grids.findById(req.params.grid_id, hidden_fields)
 	.populate('layout_id', hidden_fields)
 	.exec(function(err, result) {
 		if(err) {
