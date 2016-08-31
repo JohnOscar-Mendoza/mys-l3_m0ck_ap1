@@ -13,26 +13,70 @@ var new_id;
 router.get('/', function(req, res, next) {
 	
 	console.log((req.method+' at /v1/grids/').green);
-	Grids.find({ is_removed: 0}, hidden_fields)
-	.populate('layout_id', hidden_fields, { is_removed: false })
-	.exec(function(err, results) {
-		if(err) {
-			res.json({ message: 'No record found' });
+
+	/*
+	Waterfall queue
+	1. Get Grids
+	2. Format Results
+	*/
+	async.waterfall([
+		get_grids,
+		format_results
+		], function(err, results) {
+			if(err) {
+				res.json({ message: err });
+				next();
+			}
+			res.json(results);
+			res.end();
 			return;
-		}
 
-		// var arr = [];
-		// results.forEach( function(value) {
+		})
 
-		// 	value.layout_id.forEach( function(li_value) {
 
-		// 	} )
+	function get_grids( callback ){
+		Grids.find({ is_removed: 0}, hidden_fields)
+		.populate('layout_id', hidden_fields, { is_removed: false })
+		.exec(function(err, results) {
+			if(err) {
+				res.json({ message: 'No record found' });
+				return;
+			}
 
-		// } );
+			callback(null, results);
 
-		res.json(results);
+		});
+	}
 
-	});
+	function format_results( grids, callback ) {
+
+		async.forEach( grids, function(grid, forEachCallBack) {
+			var arr = [];
+			grids.forEach( function(value) {
+
+				var inside = {};
+
+				value.layout_id.forEach( function(li_value) {
+
+					inside[li_value.size] = li_value;
+
+				} )
+
+				arr.push( { _id: value._id, layouts: inside} );
+
+			} );
+			forEachCallBack(arr);
+
+		},
+		function(results) {
+			if( results ) {
+				callback(null, results);
+			} else {
+				callback('Error processing data', null);
+			}
+ 		} );
+	
+	}
 
 });
 
