@@ -27,8 +27,8 @@ router.get('/', function(req, res, next) {
 				res.json({ message: err });
 				next();
 			}
+
 			res.json(results);
-			res.end();
 			return;
 
 		})
@@ -103,7 +103,9 @@ router.post('/', function(req, res, next) {
 				res.json(err);
 			}
 
+			res.status(201);
 			res.json(results);
+			res.end();
 			next();
 		});
 

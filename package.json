@@ -1,5 +1,5 @@
 {
-  "name": "mysale_now_api",
+  "name": "@oscar_mysale/mysale_now_api-beta",
   "version": "1.0.0",
   "description": "Mysale Now Api",
   "main": "server.js",
