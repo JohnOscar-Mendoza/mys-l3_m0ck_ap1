@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "nodemon server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tape"
   },
   "author": "",
   "license": "ISC",
@@ -16,5 +16,9 @@
     "express": "^4.14.0",
     "lodash": "^4.15.0",
     "mongoose": "^4.5.9"
+  },
+  "devDependencies": {
+    "request": "^2.74.0",
+    "tape": "^4.6.0"
   }
 }

@@ -153,7 +153,7 @@ router.post('/', function(req, res, next) {
 
 	function get_grid(gridId, callback) {
 		
-		Grids.findById(gridId)
+		Grids.findById(gridId, hidden_fields)
 		.populate('layout_id')
 		.exec( function (err, result) {
 
