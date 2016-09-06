@@ -18,11 +18,14 @@ mongoose.connect('mongodb://localhost:27017/layouts');
 var auth = require('./routes/v1/auth');
 app.use('/v1/auth', auth);
 
+var users = require('./routes/v1/users');
+app.use('/v1/users', users);
+
 var grids = require('./routes/v1/grids');
 app.use('/v1/grids', grids);
 
-var serialized = require('./routes/v1/serialized');
-app.use('/v1/serialized', serialized)
+// var serialized = require('./routes/v1/serialized');
+// app.use('/v1/serialized', serialized)
 // Start Server
 
 var os = require('os');
