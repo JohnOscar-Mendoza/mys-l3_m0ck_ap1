@@ -85,8 +85,8 @@ router.post('/', function(req, res, next) {
 		Users.create(req.body, function(err, user) {
 			if(err) {
 				console.log(err);
-				// res.json({ message: 'Missing Required Parameter' });
-				res.json(err);
+				res.json({ message: 'Missing Required Parameter' });
+				// res.json(err);
 
 			}
 
