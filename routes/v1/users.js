@@ -85,12 +85,17 @@ router.post('/', function(req, res, next) {
 		Users.create(req.body, function(err, user) {
 			if(err) {
 				console.log(err);
-				res.json({ message: 'Missing Required Parameter' });
-				// res.json(err);
+				// res.json({ message: 'Missing Required Parameter' });
+				res.json(err);
+				res.end();
+				next();
+
+			} else {
+
+				callback(null, user._id);
 
 			}
 
-			callback(null, user._id);
 		});
 	};
 
@@ -99,10 +104,13 @@ router.post('/', function(req, res, next) {
 			if(err) {
 				console.log(err);
 				res.json({ message: 'Missing Required Parameter' });
+				res.end();
+				next();
 
+			} else {
+				callback(null, result);
 			}
 
-			callback(null, result);
 		});
 	}
 
@@ -133,10 +141,14 @@ router.put('/:user_id', function(req, res, next) {
 			if(err) {
 				console.log(err);
 				res.json({ message: 'Missing Required Parameter' });
-
+				// res.json(err);
+				res.end();
+				next();
+			}
+			else {
+				callback(null, result._id);				
 			}
 
-			callback(null, result._id);
 		});
 	}
 
@@ -146,9 +158,10 @@ router.put('/:user_id', function(req, res, next) {
 				console.log(err);
 				res.json({ message: 'Missing Required Parameter' });
 
+			} else {
+				callback(null, result);
 			}
 
-			callback(null, result);
 		});
 	}
 	
