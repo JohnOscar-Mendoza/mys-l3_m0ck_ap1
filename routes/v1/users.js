@@ -58,8 +58,8 @@ router.post('/', function(req, res, next) {
 
 	/*
 	Waterfall series
-	1. 
-
+	1. Create user 
+	2.
 	*/
 	async.waterfall([
 
@@ -107,4 +107,52 @@ router.post('/', function(req, res, next) {
 	}
 
 });
+
+router.put('/:user_id', function(req, res, next) {
+
+	async.waterfall([
+		updateUser,
+		getUser
+		], function(err, results) {
+
+			if(err) {
+				console.log(err);
+				res.json(err);
+
+			}
+
+			res.status(201);
+			res.json(results);
+			res.end();
+			next();
+
+		})
+
+	function updateUser(callback) {
+		Users.findByIdAndUpdate(req.params.user_id, req.body, function(err, result) {
+			if(err) {
+				console.log(err);
+				res.json({ message: 'Missing Required Parameter' });
+
+			}
+
+			callback(null, result._id);
+		});
+	}
+
+	function getUser(userId, callback){
+		Users.findById(userId, hidden_fields, function(err, result) {
+			if(err) {
+				console.log(err);
+				res.json({ message: 'Missing Required Parameter' });
+
+			}
+
+			callback(null, result);
+		});
+	}
+	
+
+});
+
 module.exports = router;
