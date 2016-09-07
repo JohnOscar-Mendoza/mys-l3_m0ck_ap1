@@ -4,154 +4,231 @@ var express = require('express');
 var colors = require('colors');
 var router = express.Router();
 var mongoose = require('mongoose');
+var Users = require('../../models/v1/Users');
 var Grids = require('../../models/v1/Grids');
 var Layouts = require('../../models/v1/Layouts');
 var hidden_fields = { __v: 0, is_removed: 0 };
 var response = {} ;
 var new_id;
 
-router.get('/', function(req, res, next) {
+router.get('/:user_id', function(req, res, next) {
 	
 	console.log((req.method+' at /v1/grids/').green);
 
 	/*
 	Waterfall queue
+	1. Get User
 	1. Get Grids
 	2. Format Results
 	*/
+
 	async.waterfall([
-		get_grids,
-		format_results
-		], function(err, results) {
+		async.apply(getUser, req.params.user_id),
+		// get_grids,
+		formatResults
+		// displayResults
+		], function(err, user) {
 			if(err) {
 				res.json({ message: err });
+				res.end();
 				next();
 			}
+			else {
+				res.json(user);
+				res.end();
+				next();
+			}
+		});
 
-			res.json(results);
-			return;
 
+	function getUser( userId, callback ) {
+		Users.findById(userId, hidden_fields)
+		// .populate('grid_id', hidden_fields)
+		.populate({ 
+			path: 'grid_id', 
+			model: 'grids',
+			select: hidden_fields,
+			populate: {
+				path: 'layout_id',
+				component: 'layouts',
+				select: hidden_fields
+			}
 		})
+		.exec(function(err, result) {
+			if(err || result.length <= 0) {
 
+				callback(err, null);
+			}
+			else {
+				callback(null, result);
+			}
+		});
+	}
 
-	function get_grids( callback ){
+	function getGrids( callback ){
 		Grids.find({ is_removed: 0}, hidden_fields)
 		.populate('layout_id', hidden_fields, { is_removed: false })
 		.exec(function(err, results) {
-			if(err) {
+			if(err || results.length <= 0) {
 				res.json({ message: 'No record found' });
 				return;
 			}
-
-			callback(null, results);
+			else {
+				callback(null, results);				
+			}
 
 		});
 	}
 
-	function format_results( grids, callback ) {
-
-		async.forEach( grids, function(grid, forEachCallBack) {
+	function formatResults( user, callback ) {
+		
+		var userObj = user;
+		async.forEach( userObj.grid_id, function(grid, forEachCallBack) {
 			var arr = [];
-			grids.forEach( function(value) {
-
+			userObj.grid_id.forEach( function(value) {
 				var inside = {};
-
 				value.layout_id.forEach( function(li_value) {
-
 					inside[li_value.size] = li_value;
-
-				} )
-
+				});
 				arr.push( { _id: value._id, layouts: inside} );
-
-			} );
+			});
 			forEachCallBack(arr);
-
 		},
-		function(results) {
-			if( results ) {
-				callback(null, results);
+		function(formatted) {
+			if( formatted ) {
+				callback(null, formatted);
 			} else {
 				callback('Error processing data', null);
 			}
- 		} );
-	
+		});
+
+	}
+
+	function displayResults( user, formatted, callback ) {
+		user["grid_id"]=formatted;
+		callback(null, user);
 	}
 
 });
 
-router.post('/', function(req, res, next) {
+router.post('/:userId', function(req, res, next) {
 
-	console.log(req.method+' at /v1/grids/'.red);
+	console.log((req.method+' at /v1/grids/').red);
 	
 	/* Waterfall Process
-	1. Create Grid
-	2. Layout
-	3. Update Grid
-	4. Get Grid
+	1. Check if user exists
+	2. Create Grid
+	3. Layout
+	4. Update Grid
+	5. Get Grid
 	*/
 
 	async.waterfall([
-		create_grid,
-		create_layout,
-		update_grid,
-		get_grid
+		async.apply(getUser, req.params.userId, req.body),
+		createGrid,
+		createLayout,
+		updateGrid,
+		updateUserGrid,
+		getUser
 		], 
 		function(err, results) {
 			if(err) {
 				console.log(err);
 				res.json(err);
 			}
-
-			res.status(201);
-			res.json(results);
-			res.end();
-			next();
+			else {
+				res.status(201);
+				res.json(results);
+				res.end();
+				next();
+			}
 		});
 
-	function create_grid(callback) {
+	function getUser(userId, requestBody, callback) {
+		
+		Users.findById(userId, hidden_fields)
+		// .populate('grid_id', hidden_fields)
+		.populate({ 
+			path: 'grid_id', 
+			model: 'grids',
+			select: hidden_fields,
+			populate: {
+				path: 'layout_id',
+				component: 'layouts',
+				select: hidden_fields
+			}
+		})
+		.exec(function(err, result) {
+			if(err || result.length <= 0) {
+
+				callback(err, null, null);
+			}
+			else {
+				callback(null, result, requestBody);
+			}
+		});
+	}
+
+	function createGrid(user, requestBody, callback) {
 
 		Grids.create( { }, function(err, grid) {
-			if(err) {
-
-
-				res.json({ message: 'Missing Required Parameter' });
-
+			if(err || grid.length <= 0) {
+				callback(err, null, null);
 			}
-			callback(null, grid._id, req.body);
-			return grid._id;
+			else {
+				callback(null, user, grid._id, requestBody);
+			}
+			
 		} );
 
 	}
 
-	function create_layout(gridId, requestBody ,callback) {
+	function createLayout(user, gridId, requestBody ,callback) {
 
 		Layouts.create(Object.assign({grid_id: gridId}, requestBody), function(err, layouts) {
 			if(err) {
 				console.log(err);
-				res.json({ message: 'Missing Required Parameter' });
+				// res.json({ message: 'Missing Required Parameter' });
+				res.json({ message: 'Missing Required Parameter',
+					fn: 'createLayout'
+				});
 
 			}
 
-			callback(null, gridId, layouts._id);
+			callback(null, user, gridId, layouts._id);
 		})
 
 	}
 
-	function update_grid(gridId, layoutId, callback) {
+	function updateGrid(user, gridId, layoutId, callback) {
 
 		Grids.findByIdAndUpdate(gridId, { $push: { layout_id: layoutId } }, { upsert: true }, function( err, grid) {
 			if(err) {
 				console.log(err);
-				res.json({ message: 'Missing Required Parameter' });
+				res.json({ message: 'Missing Required Parameter',
+					fn: 'updateGrid'
+				});
 			}
-
-			callback(null, grid._id);
+			else {
+				callback(null, user, grid._id);				
+			}
 
 		});
 	}
 
-	function get_grid(gridId, callback) {
+	function updateUserGrid(user, gridId, callback) {
+
+		Users.findByIdAndUpdate(user._id, { $push: { grid_id: gridId } }, { upsert: true }, function(err, user) {
+			if(err || user.length <= 0) {
+				callback(err, null, null);
+			}
+			else {
+				callback(null, user._id, {});
+			}
+		});
+	}
+
+	function getGrid(gridId, callback) {
 		
 		Grids.findById(gridId, hidden_fields)
 		.populate('layout_id')
@@ -166,7 +243,6 @@ router.post('/', function(req, res, next) {
 			callback(null, result)
 
 		});
-
 	}
 
 });
@@ -306,19 +382,19 @@ router.delete('/:grid_id', function(req, res, next) {
 
 });
 
-router.get('/:grid_id', function(req, res, next) {
+// router.get('/:grid_id', function(req, res, next) {
 
-	Grids.findById(req.params.grid_id, hidden_fields)
-	.populate('layout_id', hidden_fields)
-	.exec(function(err, result) {
-		if(err) {
-			res.json({ message: 'No record found' });
-			return;
-		}
+// 	Grids.findById(req.params.grid_id, hidden_fields)
+// 	.populate('layout_id', hidden_fields)
+// 	.exec(function(err, result) {
+// 		if(err) {
+// 			res.json({ message: 'No record found' });
+// 			return;
+// 		}
 
-		res.json(result);
-	});
+// 		res.json(result);
+// 	});
 
-})
+// })
 
 module.exports = router;

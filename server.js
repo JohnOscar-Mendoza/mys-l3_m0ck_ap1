@@ -34,10 +34,10 @@ mongoose.connection.on('connected', function() {
 	// var serialized = require('./routes/v1/serialized');
 	// app.use('/v1/serialized', serialized)
 
-	// Start Server
 	
 });
 
+// Start Server
 app.listen(3000, function(err) {
 	var os = require('os');
 	console.log("Server running at "+os.hostname()+":3000");
