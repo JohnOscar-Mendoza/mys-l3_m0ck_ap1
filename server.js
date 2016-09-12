@@ -31,8 +31,13 @@ mongoose.connection.on('connected', function() {
 	var grids = require('./routes/v1/grids');
 	app.use('/v1/grids', grids);
 
+	var graphs = require('./routes/v1/graphs');
+	app.use('/v1/graphs', graphs);
 	// var serialized = require('./routes/v1/serialized');
-	// app.use('/v1/serialized', serialized)
+	// app.use('/v1/serialized', serialized);
+
+	var search = require('./routes/v1/search');
+	app.use('/v1/search', search);
 
 	
 });
