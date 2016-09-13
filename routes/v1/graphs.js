@@ -18,6 +18,13 @@ router.get("/line/two/", function(req, res, next) {
 	});
 });
 
+router.get("/line/three/", function(req, res, next){
+	console.log((req.method + " called at /v1/graphs/guage/two/").green);
+	fs.readFile(__dirname+'/mock_responses/graphs_three.json', function(err, file) {
+		res.json(JSON.parse(file));
+	});
+});
+
 router.get("/guage/one/", function(req, res, next){
 	console.log((req.method + " called at /v1/graphs/guage/two/").green);
 	fs.readFile(__dirname+'/mock_responses/guage.json', function(err, file) {
