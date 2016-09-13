@@ -1,0 +1,26 @@
+[
+	{
+		"Name": "Total per hour",
+		"Filter": "solidguage",
+		"Data":[4600],    
+		"SkipRelativeRounding": false,
+		"Brash": {
+			"tooltip": {
+				"valueSuffix": " total per hour"
+			}
+		},
+		"Nodes": []
+	},
+	{
+		"Name": "total per minute",
+		"Filter": "solidguage",
+		"Data": [80],    
+		"SkipRelativeRounding": false,
+		"Brash": {
+			"tooltip": {
+				"valueSuffix": " total per minute"
+			}
+		},
+		"Nodes": []
+	}
+]
