@@ -39,7 +39,7 @@ router.get('/:user_id', function(req, res, next) {
 
 	console.log((req.method+' at /v1/users/:user_id').green);
 
-	Users.findById(req.params.user_id, {is_removed: 0}, function(err, result) {
+	Users.findById(req.params.user_id, hidden_fields, {is_removed: 0}, function(err, result) {
 
 		if (!err){
 			res.status(200);
@@ -151,10 +151,9 @@ router.put('/:user_id', function(req, res, next) {
 
 	function updateUser(callback) {
 		Users.findByIdAndUpdate(req.params.user_id, req.body, function(err, result) {
-			if(err) {
+			if(err || !result) {
 				console.log(err);
-				res.json({ message: 'Missing Required Parameter' });
-				// res.json(err);
+				res.json({ message: 'No record found' });
 				res.end();
 				next();
 			}
